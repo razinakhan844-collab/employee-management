@@ -1,0 +1,47 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Deploys the API as a free web service. The database is NOT defined here on
+# purpose: Render deletes free PostgreSQL instances 30 days after creation, so
+# this project uses an external Neon database instead. Paste its pooled
+# connection string into DATABASE_URL in the Render dashboard.
+#
+# Usage: Render dashboard → New → Blueprint → pick this repository.
+
+services:
+  - type: web
+    name: employee-management-api
+    runtime: node
+    plan: free
+    # Free web services spin down after 15 minutes idle; the next request takes
+    # roughly a minute to wake them.
+
+    # `migrate deploy` applies pending migrations only — it never resets data.
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Neon pooled connection string, including `?sslmode=require`.
+      # sync: false keeps the secret out of this file — set it in the dashboard.
+      - key: DATABASE_URL
+        sync: false
+
+      # Render generates a strong random value on first deploy, so no secret is
+      # committed here and production never shares the local development key.
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: JWT_EXPIRES_IN
+        value: 1d
+
+      - key: BCRYPT_SALT_ROUNDS
+        value: 10
+
+      # Restrict this to your frontend's origin once it is deployed.
+      - key: CORS_ORIGIN
+        value: "*"
+
+    # PORT is injected by Render automatically — do not set it here.
