@@ -1,0 +1,149 @@
+// Prisma schema for the Employee Management System.
+// Datasource: PostgreSQL. Client: prisma-client-js.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Application roles. Only two roles exist in this system.
+enum Role {
+  MANAGER
+  EMPLOYEE
+}
+
+/// Employment status of a user.
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+/// Lifecycle of a task.
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Lifecycle of a project.
+enum ProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+/// Lifecycle of a leave request.
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// A system user — either a MANAGER or an EMPLOYEE.
+/// Managers and employees share one table because they share the same
+/// identity/auth surface; access is separated by `role`.
+model User {
+  id         String     @id @default(uuid())
+  name       String
+  email      String     @unique
+  password   String // bcrypt hash — never returned by the API
+  role       Role       @default(EMPLOYEE)
+  department String?
+  /// Monthly salary. Decimal (not Float) to avoid rounding errors on money.
+  salary     Decimal?   @db.Decimal(12, 2)
+  status     UserStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  // Relations
+  tasks         Task[]     @relation("TasksAssignedTo")
+  createdTasks  Task[]     @relation("TasksAssignedBy")
+  projects      Project[]
+  schedules     Schedule[]
+  leaves        Leave[]
+
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+/// A unit of work created by a manager and assigned to an employee.
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  assignedTo  String
+  assignedBy  String
+  dueDate     DateTime?
+  status      TaskStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  assignee User @relation("TasksAssignedTo", fields: [assignedTo], references: [id], onDelete: Cascade)
+  assigner User @relation("TasksAssignedBy", fields: [assignedBy], references: [id], onDelete: Cascade)
+
+  @@index([assignedTo])
+  @@index([assignedBy])
+  @@index([status])
+  @@map("tasks")
+}
+
+/// A project assigned to a single employee.
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  employeeId  String
+  status      ProjectStatus @default(NOT_STARTED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  employee User @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+  @@map("projects")
+}
+
+/// A dated shift/schedule entry for an employee.
+/// `startTime` / `endTime` are stored as "HH:mm" strings so the entry is
+/// timezone-independent and renders exactly as the manager entered it.
+model Schedule {
+  id          String   @id @default(uuid())
+  employeeId  String
+  date        DateTime @db.Date
+  startTime   String
+  endTime     String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee User @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([date])
+  @@map("schedules")
+}
+
+/// A leave record for an employee, approved or rejected by a manager.
+model Leave {
+  id         String      @id @default(uuid())
+  employeeId String
+  fromDate   DateTime    @db.Date
+  toDate     DateTime    @db.Date
+  reason     String
+  status     LeaveStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  employee User @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+  @@map("leaves")
+}
