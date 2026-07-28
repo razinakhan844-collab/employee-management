@@ -38,13 +38,6 @@ export const env = {
 
   /** Comma-separated list of allowed origins, or `*`. */
   corsOrigin: optional('CORS_ORIGIN', '*'),
-
-  /** Credentials for the manager account created by the seed script. */
-  seed: {
-    managerName: optional('SEED_MANAGER_NAME', 'System Manager'),
-    managerEmail: optional('SEED_MANAGER_EMAIL', 'manager@company.com'),
-    managerPassword: optional('SEED_MANAGER_PASSWORD', 'Manager@123'),
-  },
 };
 
 export const isProduction = env.nodeEnv === 'production';

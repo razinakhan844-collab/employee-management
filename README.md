@@ -45,7 +45,7 @@ Built with **Node.js · Express · PostgreSQL · Prisma · JWT · bcrypt**, in a
 ├── prisma/
 │   ├── migrations/            # Versioned SQL migrations
 │   ├── schema.prisma          # Data model
-│   └── seed.js                # Default manager + demo data
+│   └── seed.js                # Manager + 2 employee accounts
 ├── src/
 │   ├── config/
 │   │   ├── env.js             # Validated environment configuration
@@ -125,7 +125,7 @@ In production, apply the committed migrations without generating new ones:
 npm run prisma:deploy
 ```
 
-### 5. Seed the default manager
+### 5. Seed the default accounts
 
 ```bash
 npm run seed
@@ -156,7 +156,7 @@ curl http://localhost:5000/api/health
 | `npm run prisma:deploy` | Apply pending migrations (production) |
 | `npm run prisma:generate` | Regenerate the Prisma client |
 | `npm run prisma:studio` | Open Prisma Studio |
-| `npm run seed` | Seed the default manager and demo data |
+| `npm run seed` | Create the default manager and employee accounts |
 
 ---
 
@@ -171,9 +171,6 @@ curl http://localhost:5000/api/health
 | `JWT_EXPIRES_IN` | no | `1d` | Token lifetime |
 | `BCRYPT_SALT_ROUNDS` | no | `10` | bcrypt cost factor |
 | `CORS_ORIGIN` | no | `*` | `*` or a comma-separated origin list |
-| `SEED_MANAGER_NAME` | no | `System Manager` | Seeded manager name |
-| `SEED_MANAGER_EMAIL` | no | `manager@company.com` | Seeded manager email |
-| `SEED_MANAGER_PASSWORD` | no | `Manager@123` | Seeded manager password |
 
 Missing required variables cause the process to exit at boot with a clear message rather than failing on the first request.
 
@@ -217,19 +214,19 @@ Missing required variables cause the process to exit at boot with a clear messag
 
 ## Default accounts
 
-After `npm run seed`:
+`npm run seed` creates exactly these three accounts and no other data:
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Manager | `manager@company.com` | `Manager@123` |
-| Employee | `ayesha@company.com` | `Employee@123` |
-| Employee | `daniel@company.com` | `Employee@123` |
-| Employee | `priya@company.com` | `Employee@123` |
-| Employee | `tom@company.com` | `Employee@123` |
+| Role | Name | Email | Password |
+| --- | --- | --- | --- |
+| Manager | Manager | `manager@gmail.com` | `manager@123` |
+| Employee | Razina Khan | `razinakhan844@gmail.com` | `razina@123` |
+| Employee | Mahek | `mahek@gmail.com` | `mahek@123` |
 
-> Change the manager password before any real deployment. Override it with `SEED_MANAGER_*` in `.env`.
+No tasks, projects, schedules or leaves are seeded — create those through the API once you are logged in.
 
-The seed is idempotent — users are upserted by email, and sample tasks/projects/schedules/leaves are only inserted when the database is empty.
+> These are development credentials. Change them before any real deployment.
+
+The seed is idempotent: users are upserted by email, so re-running it never creates duplicates. Existing accounts keep their current password — delete the user first if you need to reset one.
 
 ---
 
