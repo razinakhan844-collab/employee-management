@@ -12,6 +12,9 @@ services:
     name: employee-management-api
     runtime: node
     plan: free
+    # Matches the Neon database region (AWS US East 2, Ohio) — a cross-region
+    # pairing would add latency to every query.
+    region: ohio
     # Free web services spin down after 15 minutes idle; the next request takes
     # roughly a minute to wake them.
 
